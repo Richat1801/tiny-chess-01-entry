@@ -4,7 +4,7 @@ DG=[-17,-15,15,17];OR=[-16,16,-1,1];KD=DG+OR
 ND=[-33,-31,-18,-14,14,18,31,33];D={2:ND,6:KD,3:DG,4:OR,5:KD}
 CST={1:((1,(117,118),119,118),(2,(113,114,115),112,114)),-1:((4,(5,6),7,6),(8,(1,2,3),0,2))}
 RC={119:1,112:2,7:4,0:8}
-B=[];KG=[0,0];NDC=[0];INF=100000;STK=[]
+B=[];KG=[0]*2;NDC=[0];INF=100000;STK=[]
 def parse(fen):
  global B,S,C,KG,PH
  p=fen.split();B=[0]*128;i=0;PH=0
@@ -35,9 +35,8 @@ def atk(sq,by):
  return 0
 def gen(caps=0):
  ms=[]
- for sq in range(128):
-  if sq&0x88 or not B[sq]:continue
-  pc=B[sq]
+ for sq,pc in enumerate(B):
+  if sq&0x88 or not pc:continue
   if(pc>0)!=(S>0):continue
   k=abs(pc)
   if k==1:
@@ -48,7 +47,7 @@ def gen(caps=0):
     if not to&0x88 and B[to]and(B[to]>0)!=(S>0):tg.append(to)
    for to in tg:
     if to>>4 in(0,7):
-     for pr in(5,4,2):ms.append(sq|to<<7|pr<<14)
+     for pr in(5,4,3,2):ms.append(sq|to<<7|pr<<14)
     elif not caps or to!=one:ms.append(sq|to<<7)
    if not caps and one in tg and sq>>4==(6 if S>0 else 1)and not B[sq+2*st]:ms.append(sq|(sq+2*st)<<7)
   else:
@@ -80,9 +79,9 @@ def undo():
  o=STK.pop();B[:]=o[0];C=o[1];KG[0],KG[1]=o[2],o[3];S=-S
 def ev():
  sc=0
- for sq in range(128):
-  if sq&0x88 or not B[sq]:continue
-  pc=B[sq];k,r=abs(pc),sq>>4;adv=7-r if pc>0 else r
+ for sq,pc in enumerate(B):
+  if sq&0x88 or not pc:continue
+  k,r=abs(pc),sq>>4;adv=7-r if pc>0 else r
   ct=(3.5-abs((sq&7)-3.5))+(3.5-abs(r-3.5));v=V[k]
   if k==1:v+=adv*10+adv*adv*2
   elif k<6:v+=int(ct*(7,4,2,3)[k-2])
@@ -98,7 +97,7 @@ def srch(d,a,b,ply):
   if stand>=b:return b
   a=max(a,stand);ms=gen(1)
  else:ms=gen()
- ms.sort(key=lambda m:V[abs(B[(m>>7)&127])],reverse=True)
+ ms.sort(key=lambda m:V[abs(B[m&127])]-10*V[abs(B[(m>>7)&127])])
  best=-10*INF
  for m in ms:
   if abs(B[(m>>7)&127])==6:continue
